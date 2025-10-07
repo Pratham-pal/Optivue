@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BURNPEPPER AI - Model Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0a0a0a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            letter-spacing: 8px;
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .ai-badge {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            transform: rotate(45deg);
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .ai-badge span {
+            transform: rotate(-45deg);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .subtitle {
+            font-size: 1.8rem;
+            color: #ffffff;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+
+        .main-container {
+            background: rgba(25, 25, 25, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid #333;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .webcam-container {
+            position: relative;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16/9;
+            max-height: 500px;
+        }
+
+        #webcamVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+
+        .detection-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            border-radius: 15px;
+        }
+
+        .webcam-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+            color: #888;
+        }
+
+        .webcam-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .model-btn {
+            background: linear-gradient(45deg, #2c2c2c, #1a1a1a);
+            border: 2px solid #ff4757;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            min-width: 160px;
+        }
+
+        .model-btn:hover {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            border-color: #ff3838;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.3);
+        }
+
+        .model-btn.active {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            border-color: #ff3838;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+        }
+
+        .webcam-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .webcam-btn {
+            background: linear-gradient(45deg, #2c2c2c, #1a1a1a);
+            border: 2px solid #666;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .webcam-btn:hover:not(:disabled) {
+            border-color: #ff4757;
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            transform: translateY(-2px);
+        }
+
+        .webcam-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            background: rgba(15, 15, 15, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #333;
+        }
+
+        .prediction-header {
+            color: #ff4757;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .face-count-display {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .face-count-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff4757;
+            display: block;
+        }
+
+        .face-count-label {
+            font-size: 1.2rem;
+            color: #ccc;
+            letter-spacing: 1px;
+        }
+
+        .detection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detection-card {
+            background: rgba(25, 25, 25, 0.6);
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #ff4757;
+        }
+
+        .detection-card h4 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .detection-info {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .confidence-score {
+            color: #ff4757;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(15, 15, 15, 0.5);
+            border-radius: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+        }
+
+        .status-dot.active {
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #ff4757;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid #ff4757;
+            color: #ff4757;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .helpline-info {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .helpline-box {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            border: 2px solid #ff4757;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3);
+            animation: helplinePulse 2s infinite;
+        }
+
+        .helpline-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        @keyframes helplinePulse {
+            0% { box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3); }
+            50% { box-shadow: 0 8px 25px rgba(255, 71, 87, 0.6); }
+            100% { box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3); }
+        }
+
+        @media (max-width: 768px) {
+            .brand-title {
+                font-size: 2.5rem;
+                letter-spacing: 4px;
+            }
+            
+            .subtitle {
+                font-size: 1.4rem;
+                letter-spacing: 2px;
+            }
+            
+            .main-container {
+                padding: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .detection-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="brand-title">AURA HOME</h1>
+        <div class="ai-badge">
+            <span>AI</span>
+        </div>
+        <h2 class="subtitle">MODEL PREDICTOR</h2>
+    </div>
+
+    <div class="main-container">
+        <div class="webcam-container">
+            <video id="webcamVideo" autoplay muted style="display: none;"></video>
+            <canvas id="detectionCanvas" class="detection-canvas"></canvas>
+            <div id="webcamPlaceholder" class="webcam-placeholder">
+                <i>📷</i>
+                <h3>Camera Feed</h3>
+                <p>Start webcam to begin live detection</p>
+            </div>
+        </div>
+
+        <div class="status-indicator">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="statusText" class="status-text">Camera Inactive</span>
+        </div>
+
+        <div class="controls">
+            <button id="model1Btn" class="model-btn" data-model="model1">Run Model 1</button>
+            <button id="model2Btn" class="model-btn" data-model="model2">Run Model 2</button>
+            <button id="model3Btn" class="model-btn" data-model="model3">Run Model 3</button>
+        </div>
+
+        <div class="webcam-controls">
+            <button id="startWebcam" class="webcam-btn">🎥 Start Camera</button>
+            <button id="stopWebcam" class="webcam-btn" disabled>⏹️ Stop Camera</button>
+            <button id="toggleDetection" class="webcam-btn" disabled>🔄 Auto Detect</button>
+        </div>
+
+        <div class="results-section">
+            <div class="prediction-header">• PREDICTION RESULT</div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing live detection...</p>
+            </div>
+
+            <div class="face-count-display">
+                <span id="faceCountNumber" class="face-count-number">0</span>
+                <span class="face-count-label">Human Faces Detected</span>
+            </div>
+
+            <div id="detectionGrid" class="detection-grid"></div>
+
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5050';
+        let webcamStream = null;
+        let currentModel = null;
+        let isDetecting = false;
+        let detectionInterval = null;
+
+        // DOM elements
+        const webcamVideo = document.getElementById('webcamVideo');
+        const detectionCanvas = document.getElementById('detectionCanvas');
+        const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+        const startWebcamBtn = document.getElementById('startWebcam');
+        const stopWebcamBtn = document.getElementById('stopWebcam');
+        const toggleDetectionBtn = document.getElementById('toggleDetection');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const faceCountNumber = document.getElementById('faceCountNumber');
+        const detectionGrid = document.getElementById('detectionGrid');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const modelBtns = document.querySelectorAll('.model-btn');
+
+        // Initialize
+        async function init() {
+            await loadAvailableModels();
+            setupEventListeners();
+        }
+
+        // Load available models and update buttons
+        async function loadAvailableModels() {
+            try {
+                const response = await fetch(`${API_URL}/models`);
+                const data = await response.json();
+                
+                const models = data.available_models;
+                modelBtns.forEach((btn, index) => {
+                    if (models[index]) {
+                        btn.dataset.model = models[index];
+                        btn.textContent = `Run ${models[index]}`;
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
+            } catch (err) {
+                console.warn('Could not load models:', err);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            startWebcamBtn.addEventListener('click', startWebcam);
+            stopWebcamBtn.addEventListener('click', stopWebcam);
+            toggleDetectionBtn.addEventListener('click', toggleAutoDetection);
+            
+            modelBtns.forEach(btn => {
+                btn.addEventListener('click', () => selectModel(btn));
+            });
+        }
+
+        // Start webcam
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                
+                webcamVideo.srcObject = webcamStream;
+                webcamVideo.style.display = 'block';
+                webcamPlaceholder.style.display = 'none';
+                
+                // Setup canvas
+                webcamVideo.addEventListener('loadedmetadata', () => {
+                    detectionCanvas.width = webcamVideo.videoWidth;
+                    detectionCanvas.height = webcamVideo.videoHeight;
+                });
+
+                startWebcamBtn.disabled = true;
+                stopWebcamBtn.disabled = false;
+                toggleDetectionBtn.disabled = false;
+                
+                statusDot.classList.add('active');
+                statusText.textContent = 'Camera Active';
+                
+            } catch (err) {
+                showError('Failed to access webcam. Please check permissions.');
+            }
+        }
+
+        // Stop webcam
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            
+            webcamVideo.style.display = 'none';
+            webcamPlaceholder.style.display = 'flex';
+            
+            startWebcamBtn.disabled = false;
+            stopWebcamBtn.disabled = true;
+            toggleDetectionBtn.disabled = true;
+            
+            statusDot.classList.remove('active');
+            statusText.textContent = 'Camera Inactive';
+            
+            isDetecting = false;
+            clearResults();
+        }
+
+        // Select model
+        function selectModel(selectedBtn) {
+            modelBtns.forEach(btn => btn.classList.remove('active'));
+            selectedBtn.classList.add('active');
+            currentModel = selectedBtn.dataset.model;
+            
+            // If auto detection is running, restart with new model
+            if (isDetecting) {
+                startAutoDetection();
+            }
+        }
+
+        // Toggle auto detection
+        function toggleAutoDetection() {
+            if (isDetecting) {
+                stopAutoDetection();
+            } else {
+                if (!currentModel) {
+                    showError('Please select a model first');
+                    return;
+                }
+                startAutoDetection();
+            }
+        }
+
+        // Start auto detection
+        function startAutoDetection() {
+            if (!currentModel || !webcamStream) return;
+            
+            isDetecting = true;
+            toggleDetectionBtn.textContent = '⏸️ Stop Detect';
+            statusText.textContent = 'Live Detection Active';
+            
+            // Clear existing interval
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+            }
+            
+            // Start detection every 1 second
+            detectionInterval = setInterval(() => {
+                detectFaces();
+            }, 1000);
+            
+            // Initial detection
+            detectFaces();
+        }
+
+        // Stop auto detection
+        function stopAutoDetection() {
+            isDetecting = false;
+            toggleDetectionBtn.textContent = '🔄 Auto Detect';
+            statusText.textContent = 'Camera Active';
+            
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+        }
+
+        // Detect faces in current video frame
+        async function detectFaces() {
+            if (!currentModel || !webcamVideo.videoWidth) return;
+
+            try {
+                // Capture current frame
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = webcamVideo.videoWidth;
+                canvas.height = webcamVideo.videoHeight;
+                
+                ctx.drawImage(webcamVideo, 0, 0);
+                const imageData = canvas.toDataURL('image/jpeg');
+                const base64Data = imageData.split(',')[1];
+
+                // Send to API
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: base64Data,
+                        model: currentModel
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Detection failed');
+                }
+
+                displayResults(data);
+                drawDetections(data.detections);
+
+            } catch (err) {
+                console.error('Detection error:', err);
+                if (isDetecting) {
+                    showError(`Detection failed: ${err.message}`);
+                }
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            // Determine model type and show appropriate detections
+            let relevantDetections = [];
+            let detectionType = '';
+            let detectionLabel = '';
+            let detectionIcon = '';
+            
+            if (currentModel && (currentModel.toLowerCase().includes('1') || currentModel.toLowerCase().includes('face'))) {
+                // Model 1: Human Face Detection
+                relevantDetections = data.detections.filter(det => {
+                    const className = det.class_name.toLowerCase();
+                    return className.includes('human') || 
+                           className.includes('face') ||
+                           className.includes('person');
+                });
+                detectionType = 'Human Face';
+                detectionLabel = relevantDetections.length === 1 ? 'Human Face Detected' : 'Human Faces Detected';
+                detectionIcon = '👤';
+                
+            } else if (currentModel && (currentModel.toLowerCase().includes('2') || currentModel.toLowerCase().includes('fire'))) {
+                // Model 2: Fire Detection - Show ALL detections
+                relevantDetections = data.detections;
+                detectionType = 'Fire';
+                detectionLabel = relevantDetections.length === 1 ? 'Fire Detected' : 'Fires Detected';
+                detectionIcon = '🔥';
+                
+            } else if (currentModel && (currentModel.toLowerCase().includes('3') || currentModel.toLowerCase().includes('fall'))) {
+                // Model 3: Fall Detection - Show ALL detections
+                relevantDetections = data.detections;
+                detectionType = 'Posture';
+                detectionLabel = relevantDetections.length === 1 ? 'Fall Detected' : 'Falls Detected';
+                detectionIcon = '🚨';
+                
+            } else {
+                // Default: show all detections
+                relevantDetections = data.detections;
+                detectionType = 'Object';
+                detectionLabel = relevantDetections.length === 1 ? 'Object Detected' : 'Objects Detected';
+                detectionIcon = '📦';
+            }
+
+            // Update counter and add helpline info
+            faceCountNumber.textContent = relevantDetections.length;
+            document.querySelector('.face-count-label').textContent = detectionLabel;
+            
+            // Add helpline information if detections found
+            let helplineInfo = document.getElementById('helplineInfo');
+            if (!helplineInfo) {
+                helplineInfo = document.createElement('div');
+                helplineInfo.id = 'helplineInfo';
+                helplineInfo.className = 'helpline-info';
+                document.querySelector('.results-section').appendChild(helplineInfo);
+            }
+            
+            if (relevantDetections.length > 0) {
+                let helplineNumber = '';
+                if (currentModel && (currentModel.toLowerCase().includes('1') || currentModel.toLowerCase().includes('face'))) {
+                    helplineNumber = '112';
+                } else if (currentModel && (currentModel.toLowerCase().includes('2') || currentModel.toLowerCase().includes('fire'))) {
+                    helplineNumber = '101';
+                } else if (currentModel && (currentModel.toLowerCase().includes('3') || currentModel.toLowerCase().includes('fall'))) {
+                    helplineNumber = '102';
+                }
+                
+                if (helplineNumber) {
+                    helplineInfo.innerHTML = `
+                        <div class="helpline-box">
+                            <span class="helpline-text">--- Helpline No.- ${helplineNumber} ---</span>
+                        </div>
+                    `;
+                    helplineInfo.style.display = 'block';
+                }
+            } else {
+                helplineInfo.style.display = 'none';
+            }
+            
+            // Show detection cards
+            detectionGrid.innerHTML = '';
+            relevantDetections.forEach((detection, index) => {
+                const card = document.createElement('div');
+                card.className = 'detection-card';
+                card.innerHTML = `
+                    <h4>${detectionIcon} ${detectionType} ${index + 1}</h4>
+                    <div class="detection-info">
+                        <p><strong>Class:</strong> ${detection.class_name}</p>
+                        <p><strong>Confidence:</strong> <span class="confidence-score">${(detection.confidence * 100).toFixed(1)}%</span></p>
+                        <p><strong>Position:</strong> (${Math.round(detection.bbox.x1)}, ${Math.round(detection.bbox.y1)})</p>
+                        <p><strong>Size:</strong> ${Math.round(detection.bbox.width)} × ${Math.round(detection.bbox.height)}px</p>
+                    </div>
+                `;
+                detectionGrid.appendChild(card);
+            });
+
+            hideError();
+        }
+
+        // Draw detection boxes on canvas
+        function drawDetections(detections) {
+            const ctx = detectionCanvas.getContext('2d');
+            ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+
+            // Scale factor from video to canvas
+            const scaleX = detectionCanvas.width / webcamVideo.videoWidth;
+            const scaleY = detectionCanvas.height / webcamVideo.videoHeight;
+
+            // Determine which detections to show and label based on current model
+            let relevantDetections = [];
+            let labelText = '';
+            
+            if (currentModel && (currentModel.toLowerCase().includes('1') || currentModel.toLowerCase().includes('face'))) {
+                // Model 1: Human Face Detection
+                relevantDetections = detections.filter(det => {
+                    const className = det.class_name.toLowerCase();
+                    return className.includes('human') || 
+                           className.includes('face') ||
+                           className.includes('person');
+                });
+                labelText = 'Human Face';
+                
+            } else if (currentModel && (currentModel.toLowerCase().includes('2') || currentModel.toLowerCase().includes('fire'))) {
+                // Model 2: Fire Detection - Show ALL detections
+                relevantDetections = detections;
+                labelText = 'Fire';
+                
+            } else if (currentModel && (currentModel.toLowerCase().includes('3') || currentModel.toLowerCase().includes('fall'))) {
+                // Model 3: Fall Detection - Show ALL detections
+                relevantDetections = detections;
+                labelText = 'Fall';
+                
+            } else {
+                // Default: show all detections
+                relevantDetections = detections;
+                labelText = 'Object';
+            }
+
+            relevantDetections.forEach((detection) => {
+                const bbox = detection.bbox;
+                
+                // Scale coordinates
+                const x = bbox.x1 * scaleX;
+                const y = bbox.y1 * scaleY;
+                const width = bbox.width * scaleX;
+                const height = bbox.height * scaleY;
+                
+                // Draw red box (same for all detections)
+                ctx.strokeStyle = '#ff4757';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = 'rgba(255, 71, 87, 0.1)';
+                
+                ctx.fillRect(x, y, width, height);
+                ctx.strokeRect(x, y, width, height);
+                
+                // Create label with confidence percentage
+                const label = `${labelText} ${(detection.confidence * 100).toFixed(0)}%`;
+                
+                // Draw label background and text
+                ctx.font = 'bold 14px Arial';
+                const labelWidth = ctx.measureText(label).width;
+                const labelHeight = 20;
+                
+                // Red background for label
+                ctx.fillStyle = '#ff4757';
+                ctx.fillRect(x, y - labelHeight, labelWidth + 10, labelHeight);
+                
+                // White text
+                ctx.fillStyle = 'white';
+                ctx.fillText(label, x + 5, y - 6);
+            });
+        }
+
+        // Clear results
+        function clearResults() {
+            faceCountNumber.textContent = '0';
+            document.querySelector('.face-count-label').textContent = 'Objects Detected';
+            detectionGrid.innerHTML = '';
+            
+            // Hide helpline info
+            const helplineInfo = document.getElementById('helplineInfo');
+            if (helplineInfo) {
+                helplineInfo.style.display = 'none';
+            }
+            
+            const ctx = detectionCanvas.getContext('2d');
+            ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            setTimeout(() => {
+                error.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
